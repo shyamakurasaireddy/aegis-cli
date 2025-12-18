@@ -7,6 +7,19 @@ from aegis.core.context import Context
 
 console = Console()
 
+from pathlib import Path
+
+def short_path(path: str) -> str:
+    home = str(Path.home())
+    if path.startswith(home):
+        path = path.replace(home, "~", 1)
+
+    parts = path.rstrip("/").split("/")
+    if len(parts) > 1:
+        return parts[-1] if parts[-1] else "/"
+    return path
+
+
 def main():
     config = Config()
     mode = Mode(config.get("mode","learning"))
@@ -21,8 +34,13 @@ def main():
     while True:
         try:
             context.update_cwd()
-            user = input(
-                f"[aegis][{context.mode.value}][{context.cwd}]>").strip()
+            display_path = short_path(context.cwd)
+            user = console.input(
+                    f"[bold cyan]aegis[/bold cyan] "
+                    f"[dim]{context.mode.value}[/dim] "
+                    f"[green]{display_path}[/green] > "
+                ).strip()
+
 
             if user in ("exit","quit"):
                 break
@@ -48,7 +66,7 @@ def main():
                 
             context.add_history(user)
             console.print(f"You said: {user}")
-            
+
         except KeyboardInterrupt:
             break
            
