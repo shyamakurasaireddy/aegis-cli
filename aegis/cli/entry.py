@@ -1,5 +1,5 @@
 from rich.console import Console
-from aegis.core.models import Mode
+from aegis.core.modes import Mode
 import os
 
 console = Console()
@@ -23,11 +23,18 @@ def main():
 
             if user.startswith("mode "):
                 _, new_mode = user.split(maxsplit=1)
-                try:
-                    model = Mode(new_mode)
-                    console.print(f"[green] Switched to {mode.value} mode [/green]")
-                except ValueError:
-                    console.print("[red]Invalid mode[red]")
+                new_mode = new_mode.strip().lower()
+
+                if new_mode in [m.value for m in Mode]:
+                    mode = Mode(new_mode)
+                    console.print(
+                        f"[green]Switched to {mode.value} mode[/green]"
+                    )
+                else:
+                    console.print(
+                        "[red]Invalid mode.[/red] "
+                        "Valid modes: learning, assisted, auto"
+                    )
                 continue
 
             console.print(f"You said: {user}")
