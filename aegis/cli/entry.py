@@ -1,11 +1,13 @@
 from rich.console import Console
 from aegis.core.modes import Mode
 import os
+from aegis.core.config import Config
 
 console = Console()
 
 def main():
-    mode = Mode.LEARNING
+    config = Config()
+    mode = Mode(config.get("mode","learning"))
 
     console.print("[bold green] Ageis CLI [/bold green]")
     console.print("Status: experimental")
@@ -27,6 +29,7 @@ def main():
 
                 if new_mode in [m.value for m in Mode]:
                     mode = Mode(new_mode)
+                    config.set("mode",mode.value)
                     console.print(
                         f"[green]Switched to {mode.value} mode[/green]"
                     )
