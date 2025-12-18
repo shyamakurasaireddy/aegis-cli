@@ -1,13 +1,24 @@
 from rich.console import Console
+from pathlib import Path
+
 from aegis.core.modes import Mode
-import os
 from aegis.core.config import Config
 from aegis.core.context import Context
+from aegis.teaching.explainer import looks_like_command, explain_command
 
 
 console = Console()
 
-from pathlib import Path
+
+def mode_style(mode: Mode) -> str:
+    if mode == Mode.LEARNING:
+        return "blue"
+    if mode == Mode.ASSISTED:
+        return "yellow"
+    if mode == Mode.AUTO:
+        return "red"
+    return "white"
+
 
 def short_path(path: str) -> str:
     home = str(Path.home())
@@ -22,51 +33,63 @@ def short_path(path: str) -> str:
 
 def main():
     config = Config()
-    mode = Mode(config.get("mode","learning"))
-    context = Context(mode)
+    context = Context(Mode(config.get("mode", "learning")))
 
-    console.print("[bold green] Ageis CLI [/bold green]")
+    console.print("[bold green]Aegis CLI[/bold green]")
     console.print("Status: experimental")
-    console.print(f"Mode: {mode.value}")
     console.print("Type 'exit' to quit")
-    console.print("Switch mode with: mode learning | assisted | auto")
+
+    console.print("\n[bold]Modes:[/bold]")
+    console.print("  [blue]learning[/blue]  → explain commands only (safe)")
+    console.print("  [yellow]assisted[/yellow] → suggest commands before execution")
+    console.print("  [red]auto[/red]      → plan or run commands automatically\n")
 
     while True:
         try:
             context.update_cwd()
             display_path = short_path(context.cwd)
+            style = mode_style(context.mode)
+
             user = console.input(
-                    f"[bold cyan]aegis[/bold cyan] "
-                    f"[dim]{context.mode.value}[/dim] "
-                    f"[green]{display_path}[/green] > "
-                ).strip()
+                f"[bold cyan]aegis[/bold cyan] "
+                f"[{style}][{context.mode.value}][/{style}] "
+                f"[green]{display_path}[/green] ❯ "
+            ).strip()
 
-
-            if user in ("exit","quit"):
+            if user in ("exit", "quit"):
                 break
-            
 
+            # --- Mode switching ---
             if user.startswith("mode "):
                 _, new_mode = user.split(maxsplit=1)
                 new_mode = new_mode.strip().lower()
 
                 if new_mode in [m.value for m in Mode]:
-                    mode = Mode(new_mode)
-                    context.set_mode(mode)
-                    config.set("mode",mode.value)
-                    console.print(
-                        f"[green]Switched to {mode.value} mode[/green]"
-                    )
+                    context.set_mode(Mode(new_mode))
+                    config.set("mode", new_mode)
+                    console.print(f"[green]Switched to {new_mode} mode[/green]")
                 else:
                     console.print(
                         "[red]Invalid mode.[/red] "
                         "Valid modes: learning, assisted, auto"
                     )
                 continue
-                
+
             context.add_history(user)
-            console.print(f"You said: {user}")
+
+            # --- Teaching behavior ---
+            if context.mode == Mode.LEARNING and looks_like_command(user):
+                console.print(explain_command(user, context.mode))
+                continue
+
+            # --- Mode-aware fallback ---
+            if looks_like_command(user):
+                console.print(
+                    f"[dim]{context.mode.value} mode:[/dim] "
+                    "command detected."
+                )
+            else:
+                console.print(f"[dim]Not a command:[/dim] {user}")
 
         except KeyboardInterrupt:
             break
-           
