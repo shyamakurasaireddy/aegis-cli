@@ -7,7 +7,7 @@ class Context:
         self.cwd = os.getcwd()
         self.mode = mode
         self.history = deque(maxlen=20)
-        self.tasl = None
+        self.task = None
 
     def update_cwd(self):
         self.cwd = os.getcwd()

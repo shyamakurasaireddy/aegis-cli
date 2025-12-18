@@ -22,7 +22,7 @@ class Config:
                     user_config = yaml.safe_load(f) or {}
                     self.data.update(user_config)
             except Exception:
-                self.data = DEFAULT_CONFIG.clopy()
+                self.data = DEFAULT_CONFIG.copy()
         else:
             self.save()
 
